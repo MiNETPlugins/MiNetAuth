@@ -26,6 +26,7 @@ namespace MiNetAuth
     {
         private string _basepath = MiNET.Utils.Config.GetProperty("PluginDirectory", "Plugins") + "\\MiNetAuth";
         private string _file = "\\RegisterPlayerList.json";
+        private bool _notdefaultlevel;
         private List<User> _registerlist;
         static ILog Log = LogManager.GetLogger(typeof(MiNetAuth));
 
@@ -34,10 +35,14 @@ namespace MiNetAuth
             if (!Directory.Exists(_basepath)) Directory.CreateDirectory(_basepath);
             Getloginlist();
 
-            foreach (var level in Context.LevelManager.Levels)
+            //Please do not use the default level
+            if (_notdefaultlevel = Context.LevelManager.Levels.Count != 0)
             {
-                level.BlockBreak += OnBreak;
-                level.BlockPlace += OnPlace;
+                foreach (var level in Context.LevelManager.Levels)
+                {
+                    level.BlockBreak += OnBreak;
+                    level.BlockPlace += OnPlace;
+                }
             }
             Log.Info("MiNetAuth Enable");
         }
@@ -51,6 +56,12 @@ namespace MiNetAuth
         [PacketHandler]
         public Package PlayerJoin(McpeLogin package, Player player)
         {
+            if (!_notdefaultlevel)
+            {
+                player.Level.BlockBreak += OnBreak;
+                player.Level.BlockPlace += OnPlace;
+                _notdefaultlevel = true;
+            }
             if (!(_registerlist.Contains(player.User)))
             {
                 player.AddPopup(new Popup()
@@ -183,7 +194,7 @@ namespace MiNetAuth
             else
             {
                 string json = File.ReadAllText(_basepath + _file);
-                _registerlist = !string.IsNullOrEmpty(json) ? new List<User>() : JsonConvert.DeserializeObject<User[]>(json).ToList();
+                _registerlist = string.IsNullOrEmpty(json) ? new List<User>() : JsonConvert.DeserializeObject<User[]>(json).ToList();
             }
         }
     }

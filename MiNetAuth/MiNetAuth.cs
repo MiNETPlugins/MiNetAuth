@@ -70,17 +70,15 @@ namespace MiNetAuth
                     MessageType = MessageType.Popup
                 });
             }
-            else if (!player.User.IsAuthenticated)
-            {
-                player.AddPopup(new Popup()
-                {
-                    Message = "Type /auth [Password] to Login",
-                    MessageType = MessageType.Popup
-                });
-            }
             else
             {
                 player.User = _registerlist.Find(t => t.UserName == player.Username);
+                if (!player.User.IsAuthenticated)
+                    player.AddPopup(new Popup()
+                    {
+                        Message = "Type /auth [Password] to Login",
+                        MessageType = MessageType.Popup
+                    });
             }
             return package;
         }

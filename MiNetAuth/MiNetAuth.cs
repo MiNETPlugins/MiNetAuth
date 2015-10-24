@@ -24,13 +24,15 @@ namespace MiNetAuth
     [Plugin(Author = "FKDPIBC", Description = "AuthPlugin", PluginName = "MiNetAuth", PluginVersion = "0.0.1")]
     public class MiNetAuth : Plugin
     {
-        private string _basepath = AppDomain.CurrentDomain.BaseDirectory + "\\MiNetAuth\\RegisterPlayerList.json";
+        private string _basepath = MiNET.Utils.Config.GetProperty("PluginDirectory", "Plugins") + "\\MiNetAuth";
+        private string _file = "\\RegisterPlayerList.json";
         private List<User> _registerlist;
         static ILog Log = LogManager.GetLogger(typeof(MiNetAuth));
 
         protected override void OnEnable()
         {
-            if (!Getloginlist()) _registerlist = new List<User>();//Maybe this is invalidate line
+            if (!Directory.Exists(_basepath)) Directory.CreateDirectory(_basepath);
+            Getloginlist();
 
             foreach (var level in Context.LevelManager.Levels)
             {
@@ -42,8 +44,8 @@ namespace MiNetAuth
 
         public override void OnDisable()
         {
-            if (SaveloginLlist())
-                Log.Info("MiNetAuth Disable");
+            SaveloginLlist();
+            Log.Info("MiNetAuth Disable");
         }
 
         [PacketHandler]
@@ -67,7 +69,7 @@ namespace MiNetAuth
             }
             else
             {
-                player.User = _registerlist.Find(t=>t.UserName==player.Username);
+                player.User = _registerlist.Find(t => t.UserName == player.Username);
             }
             return package;
         }
@@ -159,35 +161,29 @@ namespace MiNetAuth
             });
         }
 
-        private bool SaveloginLlist()
+        private void SaveloginLlist()
         {
-            if (!File.Exists(_basepath))
+            if (!File.Exists(_basepath + _file))
             {
-                File.Create(_basepath);
+                File.Create(_basepath + _file);
                 Log.Info("You Don't have RegisterPlayerList file,we will create it.");
-                return SaveloginLlist();
             }
-            else
-            {
-                string json = JsonConvert.SerializeObject(_registerlist.ToArray());
-                File.WriteAllText(_basepath, json);
-                return true;
-            }
+            string json = JsonConvert.SerializeObject(_registerlist.ToArray());
+            File.WriteAllText(_basepath + _file, json);
         }
 
-        private bool Getloginlist()
+        private void Getloginlist()
         {
-            if (!File.Exists(_basepath))
+
+            if (!File.Exists(_basepath + _file))
             {
-                File.Create(_basepath);
+                File.Create(_basepath + _file);
                 Log.Info("You Don't have RegisterPlayerList file,we will create it.");
-                return Getloginlist();
             }
             else
             {
-                string json = File.ReadAllText(_basepath);
-                _registerlist.AddRange(JsonConvert.DeserializeObject<User[]>(json));
-                return true;
+                string json = File.ReadAllText(_basepath + _file);
+                _registerlist = !string.IsNullOrEmpty(json) ? new List<User>() : JsonConvert.DeserializeObject<User[]>(json).ToList();
             }
         }
     }
